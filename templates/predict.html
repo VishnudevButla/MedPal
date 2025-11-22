@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Disease Prediction</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    footer {
+      margin-top: auto; /* Pushes footer to bottom */
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      background-color: #f9fafb;
+      display: flex;
+      flex-direction: column;
+    }
+    .navbar {
+      background-color: #0d6efd;
+    }
+    .navbar-brand, .nav-link {
+      color: #fff !important;
+    }
+    .card {
+      transition: transform 0.2s ease-in-out;
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .container {
+      margin-top: 100px;
+    }
+    .form-section {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  {% include '/partials/header.html' %}
+
+  <div class="container">
+    <h2 class="text-center mb-4">Disease Prediction System</h2>
+    {% if error %}
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+    {% endif %}
+    {% if prediction %}
+      <div id="alert-message" class="alert alert-info mt-4" role="alert">
+        <h5>Prediction Result:</h5>
+        <p>{{ prediction }}</p>
+      </div>
+    {% endif %}
+
+    {% if not model_name %}
+      <!-- Show model selection cards -->
+      <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for model in models %}
+        <div class="col">
+          <form action="/predictions" method="post">
+            <input type="hidden" name="model_name" value="{{ model }}">
+            <div class="card text-center p-3">
+              <h5 class="card-title">{{ model }}</h5>
+              <p class="card-text">Click to enter patient details for {{ model }} prediction.</p>
+              <button type="submit" class="btn btn-primary">Select</button>
+            </div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <!-- Dynamic input form for selected model -->
+      <div class="form-section">
+        <h4 class="mb-3">Enter details for {{ model_name }} model</h4>
+        <form id="predictionForm" action="/predict_result" method="post">
+          <input type="hidden" name="model_name" value="{{ model_name }}">
+          
+          {% for param, poss_values in params %}
+          <div class="mb-3">
+            <label class="form-label">{{ param }}</label>
+            {% if poss_values %}
+              <select class="form-select" name="{{ param }}" required>
+                <option value="" selected disabled>-- Select {{ param }} --</option>
+                {% for value in poss_values %}
+                  <option value="{{ value }}">{{ value }}</option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <input type="number" step="any" class="form-control" name="{{ param }}" required>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          <!-- Submit button -->
+          <button id="submitBtn" type="submit" class="btn btn-success">
+            Predict
+          </button>
+
+          <!-- Spinner button (hidden by default) -->
+          <button class="btn btn-primary d-none" type="button" id="loadingBtn" disabled>
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span id="spinnerText">Processing inputs...</span>
+          </button>
+        </form>
+      </div>
+    {% endif %}
+
+    
+
+  </div>
+
+  <!-- Footer -->
+  {% include '/partials/footer.html' %}
+
+  <script>
+    const form = document.getElementById('predictionForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingBtn = document.getElementById('loadingBtn');
+    const spinnerText = document.getElementById('spinnerText');
+    const alertBox = document.getElementById("alert-message");
+
+    const messages = [
+      "Processing inputs...",
+      "Validating data...",
+      "Generating results...",
+      "Almost done..."
+    ];
+
+    form.addEventListener('submit', function() {
+      submitBtn.classList.add('d-none');
+      loadingBtn.classList.remove('d-none');
+
+      // Change spinner text every 1.5 seconds
+      let i = 0;
+      const interval = setInterval(() => {
+        spinnerText.textContent = messages[i % messages.length];
+        i++;
+      }, 5000);
+    });
+
+    setTimeout(() => {
+    if (alertBox) {
+      alertBox.style.transition = "opacity 0.5s ease";
+      alertBox.style.opacity = "0";
+      setTimeout(() => alertBox.remove(), 200); // remove after fade out
+    }
+  }, 10000); 
+  </script>
+</body>
+</html>
